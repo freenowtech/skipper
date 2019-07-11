@@ -56,6 +56,7 @@ const (
 	skipperRoutesAnnotationKey         = "zalando.org/skipper-routes"
 	skipperLoadbalancerAnnotationKey   = "zalando.org/skipper-loadbalancer"
 	pathModeAnnotationKey              = "zalando.org/skipper-ingress-path-mode"
+	ingressOriginName                  = "ingress"
 )
 
 // PathMode values are used to control the ingress path interpretation. The path mode can
@@ -178,6 +179,9 @@ type Options struct {
 	// DefaultFiltersDir enables default filters mechanism and sets the location of the default filters.
 	// The provided filters are then applied to all routes.
 	DefaultFiltersDir string
+
+	// If the OriginMarker should be added as a filter
+	OriginMarker bool
 }
 
 // Client is a Skipper DataClient implementation used to create routes based on Kubernetes Ingress settings.
@@ -202,6 +206,7 @@ type Client struct {
 	pathMode                    PathMode
 	quit                        chan struct{}
 	defaultFiltersDir           string
+	originMarker                bool
 }
 
 var (
@@ -297,6 +302,7 @@ func New(o Options) (*Client, error) {
 		servicesURI:                 servicesClusterURI,
 		endpointsURI:                endpointsClusterURI,
 		defaultFiltersDir:           o.DefaultFiltersDir,
+		originMarker:                o.OriginMarker,
 	}
 	if o.KubernetesNamespace != "" {
 		result.setNamespace(o.KubernetesNamespace)
@@ -1009,6 +1015,14 @@ func (c *Client) ingressToRoutes(state *clusterState, defaultFilters map[resourc
 			if redirect.disableHost[host] {
 				routes = append(routes, createIngressDisableHTTPSRedirect(catchAll))
 			}
+		}
+	}
+
+	if c.originMarker && len(routes) > 0 {
+		//it doesn't matter which route the marker is added to
+		r := routes[0]
+		for _, i := range state.ingresses {
+			r.Filters = append(r.Filters, builtin.NewOriginMarker(ingressOriginName, i.Metadata.Uid, i.Metadata.Created))
 		}
 	}
 
