@@ -948,8 +948,8 @@ func (p *Proxy) checkRatelimit(ctx *context) (ratelimit.Settings, int) {
 	ctx.parentSpan = span
 
 	defer func() {
-		p.metrics.IncCounter("proxy.check_ratelimit_duration_count")
-		p.metrics.IncCounterBy("proxy.check_ratelimit_duration_sum", int64(time.Since(checkStart)))
+		p.metrics.IncCounter("proxy.check_ratelimit_duration_milliseconds_count")
+		p.metrics.IncCounterBy("proxy.check_ratelimit_duration_milliseconds_sum", time.Since(checkStart).Milliseconds())
 	}()
 
 	if p.limiters == nil {
