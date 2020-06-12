@@ -942,6 +942,10 @@ func (p *Proxy) makeBackendRequest(ctx *context) (*http.Response, *proxyError) {
 // the request passed in the context should be allowed.
 // otherwise it returns the used ratelimit.Settings and the retry-after period.
 func (p *Proxy) checkRatelimit(ctx *context) (ratelimit.Settings, int) {
+	span := tracing.CreateSpan("check_ratelimit", ctx.request.Context(), p.tracing.tracer)
+	defer span.Finish()
+	ctx.parentSpan = span
+
 	if p.limiters == nil {
 		return ratelimit.Settings{}, 0
 	}
