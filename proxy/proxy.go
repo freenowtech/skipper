@@ -942,6 +942,15 @@ func (p *Proxy) makeBackendRequest(ctx *context) (*http.Response, *proxyError) {
 // the request passed in the context should be allowed.
 // otherwise it returns the used ratelimit.Settings and the retry-after period.
 func (p *Proxy) checkRatelimit(ctx *context) (ratelimit.Settings, int) {
+	if p.limiters == nil {
+		return ratelimit.Settings{}, 0
+	}
+
+	settings, ok := ctx.stateBag[ratelimitfilters.RouteSettingsKey].([]ratelimit.Settings)
+	if !ok || len(settings) < 1 {
+		return ratelimit.Settings{}, 0
+	}
+
 	checkStart := time.Now()
 	span := tracing.CreateSpan("check_ratelimit", ctx.request.Context(), p.tracing.tracer)
 	defer span.Finish()
@@ -951,15 +960,6 @@ func (p *Proxy) checkRatelimit(ctx *context) (ratelimit.Settings, int) {
 		p.metrics.IncCounter("proxy.check_ratelimit_duration_nanoseconds_count")
 		p.metrics.IncCounterBy("proxy.check_ratelimit_duration_nanoseconds_sum", time.Since(checkStart).Nanoseconds())
 	}()
-
-	if p.limiters == nil {
-		return ratelimit.Settings{}, 0
-	}
-
-	settings, ok := ctx.stateBag[ratelimitfilters.RouteSettingsKey].([]ratelimit.Settings)
-	if !ok || len(settings) < 1 {
-		return ratelimit.Settings{}, 0
-	}
 
 	for _, setting := range settings {
 		rl := p.limiters.Get(setting)
