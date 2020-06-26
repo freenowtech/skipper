@@ -237,9 +237,15 @@ func convertPathRule(
 		return r, nil
 	}
 
+	address, err := getServiceURL(svc, svcPort)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &eskip.Route{
 		Id:          routeID(ns, name, host, prule.Path, prule.Backend.ServiceName),
 		BackendType: eskip.LBBackend,
+		Backend:     address,
 		LBEndpoints: eps,
 		LBAlgorithm: getLoadBalancerAlgorithm(metadata),
 		HostRegexps: hostRegexp,
