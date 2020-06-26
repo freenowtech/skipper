@@ -743,8 +743,14 @@ func (c *Client) convertPathRule(
 		return nil, nil
 	}
 
+	address, err := c.getServiceURL(svc, svcPort)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &eskip.Route{
 		Id:          routeID(ns, name, host, prule.Path, prule.Backend.ServiceName),
+		Backend:     address,
 		BackendType: eskip.LBBackend,
 		LBEndpoints: eps,
 		LBAlgorithm: getLoadBalancerAlgorithm(metadata),

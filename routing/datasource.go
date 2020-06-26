@@ -200,7 +200,7 @@ func receiveRouteDefs(o Options, quit <-chan struct{}) <-chan []*eskip.Route {
 // scheme and host variables.
 func splitBackend(r *eskip.Route) (string, string, error) {
 	if r.Shunt || r.BackendType == eskip.ShuntBackend || r.BackendType == eskip.LoopBackend ||
-		r.BackendType == eskip.DynamicBackend || r.BackendType == eskip.LBBackend {
+		r.BackendType == eskip.DynamicBackend || (r.BackendType == eskip.LBBackend && r.Backend == "") {
 		return "", "", nil
 	}
 
