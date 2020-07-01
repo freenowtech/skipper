@@ -40,6 +40,7 @@ type Prometheus struct {
 	proxyBackend5xxM           *prometheus.HistogramVec
 	proxyBackendErrorsM        *prometheus.CounterVec
 	proxyStreamingErrorsM      *prometheus.CounterVec
+	circuitBreakerOpenM        *prometheus.CounterVec
 	customHistogramM           *prometheus.HistogramVec
 	customCounterM             *prometheus.CounterVec
 	customGaugeM               *prometheus.GaugeVec
@@ -180,6 +181,12 @@ func NewPrometheus(opts Options) *Prometheus {
 		Name:      "error_total",
 		Help:      "Total number of streaming route errors.",
 	}, []string{"route"})
+	circuitBreakerOpen := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Subsystem: promProxySubsystem,
+		Name:      "circuit_breaker_open_total",
+		Help:      "Total number of requests rejected due to an open circuit breaker.",
+	}, []string{"route"})
 
 	customCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
@@ -218,6 +225,7 @@ func NewPrometheus(opts Options) *Prometheus {
 		proxyBackend5xxM:           proxyBackend5xx,
 		proxyBackendErrorsM:        proxyBackendErrors,
 		proxyStreamingErrorsM:      proxyStreamingErrors,
+		circuitBreakerOpenM:        circuitBreakerOpen,
 		customCounterM:             customCounter,
 		customGaugeM:               customGauge,
 		customHistogramM:           customHistogram,
@@ -253,6 +261,7 @@ func (p *Prometheus) registerMetrics() {
 	p.registry.MustRegister(p.proxyBackend5xxM)
 	p.registry.MustRegister(p.proxyBackendErrorsM)
 	p.registry.MustRegister(p.proxyStreamingErrorsM)
+	p.registry.MustRegister(p.circuitBreakerOpenM)
 	p.registry.MustRegister(p.customCounterM)
 	p.registry.MustRegister(p.customHistogramM)
 	p.registry.MustRegister(p.customGaugeM)
@@ -408,4 +417,9 @@ func (p *Prometheus) MeasureBackend5xx(start time.Time) {
 // IncErrorsStreaming satisfies Metrics interface.
 func (p *Prometheus) IncErrorsStreaming(routeID string) {
 	p.proxyStreamingErrorsM.WithLabelValues(routeID).Inc()
+}
+
+// IncCircuitBreakerOpen satisfies Metrics interface.
+func (p *Prometheus) IncCircuitBreakerOpen(routeID string) {
+	p.circuitBreakerOpenM.WithLabelValues(routeID).Inc()
 }

@@ -1066,6 +1066,7 @@ func (p *Proxy) do(ctx *context) error {
 
 		done, allow := p.checkBreaker(ctx)
 		if !allow {
+			p.metrics.IncCircuitBreakerOpen(ctx.route.Id)
 			tracing.LogKV("circuit_breaker", "open", ctx.request.Context())
 			return errCircuitBreakerOpen
 		}
