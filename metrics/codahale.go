@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -224,6 +224,8 @@ func (c *CodaHale) IncErrorsStreaming(routeId string) {
 		c.incCounter(fmt.Sprintf(KeyErrorsStreaming, routeId), 1)
 	}
 }
+
+func (c *CodaHale) IncCircuitBreakerOpen(_ string) {}
 
 func (c *CodaHale) RegisterHandler(path string, handler *http.ServeMux) {
 	h := c.getHandler(path)
