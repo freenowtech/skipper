@@ -1027,6 +1027,16 @@ func (p *Proxy) checkRatelimit(ctx *context) (ratelimit.Settings, int) {
 		return ratelimit.Settings{}, 0
 	}
 
+	checkStart := time.Now()
+	span := tracing.CreateSpan("check_ratelimit", ctx.request.Context(), p.tracing.tracer)
+	defer span.Finish()
+	ctx.parentSpan = span
+
+	defer func() {
+		p.metrics.IncCounter("proxy.check_ratelimit_duration_seconds_count")
+		p.metrics.IncFloatCounterBy("proxy.check_ratelimit_duration_seconds_sum", time.Since(checkStart).Seconds())
+	}()
+
 	for _, setting := range settings {
 		rl := p.limiters.Get(setting)
 		if rl == nil {
