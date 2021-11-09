@@ -15,8 +15,8 @@ const (
 type AIMD struct {
 	count    float64
 	duration float64
-	metrics  metrics.Metrics
 	mu       sync.Mutex
+	metrics  metrics.Metrics
 	interval time.Duration
 
 	// minConcurrency is the minimum allowed number of concurrent connections
@@ -76,7 +76,10 @@ func SetConcurrency(q *Queue) {
 	for {
 		<-t.C
 		newConcurrency := q.aimd.CalculateConcurrency(float64(q.config.MaxConcurrency))
-		q.metrics.UpdateGauge(q.aimdConcurrencyMetricsKey, float64(newConcurrency))
+		if q.metrics != nil {
+			q.metrics.UpdateGauge(q.aimdConcurrencyMetricsKey, float64(newConcurrency))
+		}
+
 		q.config.MaxConcurrency = newConcurrency
 		q.reconfigure()
 		q.aimd.Reset()

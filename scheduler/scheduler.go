@@ -135,7 +135,7 @@ type GroupedLIFOFilter interface {
 // It is mandatory to call done() the request was processed. When the
 // request needs to be rejected, an error will be returned.
 func (q *Queue) Wait() (done func(), err error) {
-	done, err = q.queue.Wait()
+	waitDone, err := q.queue.Wait()
 	if q.metrics != nil && err != nil {
 		switch err {
 		case jobqueue.ErrStackFull:
@@ -148,12 +148,12 @@ func (q *Queue) Wait() (done func(), err error) {
 	}
 
 	ts := time.Now()
-	newDone := func() {
+	done = func() {
 		q.aimd.Collect(time.Since(ts).Seconds())
-		done()
+		waitDone()
 	}
 
-	return newDone, err
+	return done, err
 }
 
 // Status returns the current status of a queue.
@@ -214,8 +214,6 @@ func (r *Registry) newQueue(name string, c Config) *Queue {
 		}),
 	}
 
-	go SetConcurrency(q)
-
 	if r.options.EnableRouteLIFOMetrics {
 		if name == "" {
 			name = "unknown"
@@ -230,6 +228,8 @@ func (r *Registry) newQueue(name string, c Config) *Queue {
 		q.metrics = r.options.Metrics
 		r.measure()
 	}
+
+	go SetConcurrency(q)
 
 	return q
 }
