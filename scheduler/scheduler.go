@@ -9,6 +9,7 @@ import (
 
 	"github.com/aryszka/jobqueue"
 	log "github.com/sirupsen/logrus"
+
 	"github.com/zalando/skipper/metrics"
 	"github.com/zalando/skipper/routing"
 )
@@ -57,14 +58,16 @@ type QueueStatus struct {
 // concurrency and queue size. Currently, they can be used from the lifo and lifoGroup
 // filters in the filters/scheduler package only.
 type Queue struct {
-	queue                    *jobqueue.Stack
-	config                   Config
-	metrics                  metrics.Metrics
-	activeRequestsMetricsKey string
-	errorFullMetricsKey      string
-	errorOtherMetricsKey     string
-	errorTimeoutMetricsKey   string
-	queuedRequestsMetricsKey string
+	aimd                         *AIMD
+	queue                        *jobqueue.Stack
+	config                       Config
+	metrics                      metrics.Metrics
+	activeRequestsMetricsKey     string
+	errorFullMetricsKey          string
+	errorOtherMetricsKey         string
+	errorTimeoutMetricsKey       string
+	queuedRequestsMetricsKey  string
+	aimdConcurrencyMetricsKey string
 }
 
 // Options provides options for the registry.
@@ -144,7 +147,13 @@ func (q *Queue) Wait() (done func(), err error) {
 		}
 	}
 
-	return done, err
+	ts := time.Now()
+	newDone := func() {
+		q.aimd.Collect(time.Since(ts).Seconds())
+		done()
+	}
+
+	return newDone, err
 }
 
 // Status returns the current status of a queue.
@@ -193,7 +202,9 @@ func NewRegistry() *Registry {
 }
 
 func (r *Registry) newQueue(name string, c Config) *Queue {
+	aimd := NewAIMD(5, 50,10*time.Second)
 	q := &Queue{
+		aimd:   aimd,
 		config: c,
 		// renaming Stack -> Queue in the jobqueue project will follow
 		queue: jobqueue.With(jobqueue.Options{
@@ -202,6 +213,8 @@ func (r *Registry) newQueue(name string, c Config) *Queue {
 			Timeout:        c.Timeout,
 		}),
 	}
+
+	go SetConcurrency(q)
 
 	if r.options.EnableRouteLIFOMetrics {
 		if name == "" {
@@ -213,6 +226,7 @@ func (r *Registry) newQueue(name string, c Config) *Queue {
 		q.errorFullMetricsKey = fmt.Sprintf("lifo.%s.error.full", name)
 		q.errorOtherMetricsKey = fmt.Sprintf("lifo.%s.error.other", name)
 		q.errorTimeoutMetricsKey = fmt.Sprintf("lifo.%s.error.timeout", name)
+		q.aimdConcurrencyMetricsKey = fmt.Sprintf("lifo.aimd.%s.concurrency", name)
 		q.metrics = r.options.Metrics
 		r.measure()
 	}
