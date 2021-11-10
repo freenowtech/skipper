@@ -12,13 +12,18 @@ const (
 	threshold = 3
 )
 
+// AIMD implements a additive increase, multiplicative decrease algorithm to calculate the maximum number of concurrent
+// connections for a service.
 type AIMD struct {
 	count    float64
 	duration float64
 	mu       sync.Mutex
 	metrics  metrics.Metrics
+	// interval stores the interval after which concurrency is recalculated
 	interval time.Duration
 
+	// lastConcurrency stores the last known maximum number of concurrent connections
+	lastConcurrency int
 	// minConcurrency is the minimum allowed number of concurrent connections
 	minConcurrency float64
 	// maxConcurrency is the maximum allowed number of concurrent connections
@@ -27,9 +32,10 @@ type AIMD struct {
 
 func NewAIMD(minConcurrency, maxConcurrency float64, interval time.Duration) *AIMD {
 	return &AIMD{
-		minConcurrency: minConcurrency,
-		maxConcurrency: maxConcurrency,
-		interval:       interval,
+		minConcurrency:  minConcurrency,
+		maxConcurrency:  maxConcurrency,
+		lastConcurrency: int(maxConcurrency),
+		interval:        interval,
 	}
 }
 
@@ -65,7 +71,7 @@ func (a *AIMD) CalculateConcurrency(oldConcurrency float64) int {
 		return int(a.maxConcurrency)
 	}
 
-	if a.Total() < threshold {
+	if a.Total() < threshold || rps == 0 {
 		return int(math.Min(oldConcurrency+1, a.maxConcurrency))
 	}
 	return int(math.Max(oldConcurrency/2, a.minConcurrency))
@@ -75,13 +81,15 @@ func SetConcurrency(q *Queue) {
 	t := time.NewTicker(q.aimd.interval)
 	for {
 		<-t.C
-		newConcurrency := q.aimd.CalculateConcurrency(float64(q.config.MaxConcurrency))
+		newConcurrency := q.aimd.CalculateConcurrency(float64(q.aimd.lastConcurrency))
 		if q.metrics != nil {
 			q.metrics.UpdateGauge(q.aimdConcurrencyMetricsKey, float64(newConcurrency))
 		}
 
-		q.config.MaxConcurrency = newConcurrency
-		q.reconfigure()
-		q.aimd.Reset()
+		q.aimd.lastConcurrency = newConcurrency
+		// TODO: Uncomment next lines to enable AIMD.
+		//q.config.MaxConcurrency = newConcurrency
+		//q.reconfigure()
+		//q.aimd.Reset()
 	}
 }
