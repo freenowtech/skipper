@@ -61,7 +61,7 @@ func (a *AIMD) CalculateRPS() float64 {
 
 func (a *AIMD) CalculateConcurrency(oldConcurrency float64) int {
 	rps := a.CalculateRPS()
-	if rps < 1 {
+	if rps < 1 && oldConcurrency == a.maxConcurrency {
 		return int(a.maxConcurrency)
 	}
 
