@@ -87,6 +87,7 @@ func SetConcurrency(q *Queue) {
 		}
 
 		q.aimd.lastConcurrency = newConcurrency
+		q.aimd.Reset()
 		// TODO: Uncomment next lines to enable AIMD.
 		//q.config.MaxConcurrency = newConcurrency
 		//q.reconfigure()
