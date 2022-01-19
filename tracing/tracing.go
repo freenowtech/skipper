@@ -58,6 +58,7 @@ import (
 
 	ot "github.com/opentracing/opentracing-go"
 	"github.com/zalando/skipper/tracing/tracers/basic"
+	"github.com/zalando/skipper/tracing/tracers/datadog"
 	"github.com/zalando/skipper/tracing/tracers/instana"
 	"github.com/zalando/skipper/tracing/tracers/jaeger"
 	"github.com/zalando/skipper/tracing/tracers/lightstep"
@@ -77,6 +78,8 @@ func InitTracer(opts []string) (tracer ot.Tracer, err error) {
 		return &ot.NoopTracer{}, nil
 	case "basic":
 		return basic.InitTracer(opts)
+	case "datadog":
+		return datadog.InitTracer(opts)
 	case "instana":
 		return instana.InitTracer(opts)
 	case "jaeger":

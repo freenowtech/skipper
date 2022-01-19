@@ -28,11 +28,10 @@ require (
 	github.com/oklog/ulid v1.3.1
 	github.com/opentracing/basictracer-go v1.0.0
 	github.com/opentracing/opentracing-go v1.1.0
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/pquerna/cachecontrol v0.0.0-20180517163645-1555304b9b35 // indirect
 	github.com/prometheus/client_golang v1.0.0
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sanity-io/litter v1.1.0
 	github.com/sarslanhan/cronmask v0.0.0-20190709075623-766eca24d011
 	github.com/shirou/gopsutil v3.21.2+incompatible // indirect
@@ -54,7 +53,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210917161153-d61c044b1678 // indirect
 	golang.org/x/tools v0.1.0 // indirect
-	google.golang.org/grpc v1.22.0 // indirect
+	gopkg.in/DataDog/dd-trace-go.v1 v1.35.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/square/go-jose.v2 v2.3.1
 	gopkg.in/yaml.v2 v2.4.0
